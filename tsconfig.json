@@ -1,0 +1,42 @@
+{
+  // Quality: enable as many checks as possible
+  // Performance: generate the highest ECMAScript version supported by the target runtime
+  "compilerOptions": {
+    // Type Checking
+    "strict": true,
+    // "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+
+    // Modules
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolveJsonModule": true,
+    "types": ["node", "vscode", "mocha"],
+
+    // Emit
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "out",
+    "removeComments": true,
+    "rootDir": "src",
+    "sourceMap": true,
+
+    // Interop Constraints
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+
+    // Language and Environment
+    "lib": ["ES2024", "ESNext.Collection", "ESNext.Iterator", "DOM"],
+    "target": "ES2024",
+
+    // Completeness
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"]
+}

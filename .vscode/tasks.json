@@ -1,0 +1,74 @@
+// See https://go.microsoft.com/fwlink/?LinkId=733558
+// for the documentation about the tasks.json format
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "watch",
+      "dependsOn": ["watch:tsc", "watch:build"],
+      "presentation": {
+        "reveal": "never"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "type": "npm",
+      "script": "watch:build",
+      "group": "build",
+      "problemMatcher": {
+        "owner": "rolldown",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": [
+          {
+            "regexp": "^(?:\\[[^\\]]+\\]\\s+)?Error:\\s+(.+)$",
+            "message": 1
+          },
+          {
+            "regexp": "\\[\\s+([^:]+):(\\d+):(\\d+)\\s+\\]",
+            "file": 1,
+            "line": 2,
+            "column": 3
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "rebuilding...$",
+          "endsPattern": "^✔ Rebuilt "
+        }
+      },
+      "isBackground": true,
+      "label": "watch:build",
+      "presentation": {
+        "group": "watch",
+        "reveal": "silent"
+      }
+    },
+    {
+      "type": "npm",
+      "script": "watch:tsc",
+      "group": "build",
+      "problemMatcher": "$tsc-watch",
+      "isBackground": true,
+      "label": "watch:tsc",
+      "presentation": {
+        "group": "watch",
+        "reveal": "silent"
+      }
+    },
+    {
+      "type": "npm",
+      "script": "watch-tests",
+      "group": "build",
+      "problemMatcher": "$tsc-watch",
+      "isBackground": true,
+      "label": "watch-tests",
+      "presentation": {
+        "group": "watch",
+        "reveal": "silent"
+      }
+    }
+  ]
+}
