@@ -15,7 +15,7 @@
     "esp32"
   ],
   "license": "MIT",
-  "publisher": "chcbaram",
+  "publisher": "baram-dev",
   "repository": {
     "type": "git",
     "url": "https://github.com/Holiday-Robot/firmware-vscode-task.git"
