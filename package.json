@@ -16,6 +16,14 @@
   ],
   "license": "MIT",
   "publisher": "chcbaram",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Holiday-Robot/firmware-vscode-task.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Holiday-Robot/firmware-vscode-task/issues"
+  },
+  "homepage": "https://github.com/Holiday-Robot/firmware-vscode-task#readme",
   "main": "./dist/extension.js",
   "scripts": {
     "compile": "pnpm run check-types && pnpm run lint && rolldown -c",
