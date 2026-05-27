@@ -108,6 +108,14 @@ pnpm run watch       # rolldown + tsc in watch mode
 # Press F5 in VSCode to launch the Extension Development Host
 ```
 
+## Credits
+
+This extension is based on
+[cnshenj/vscode-task-manager](https://github.com/cnshenj/vscode-task-manager),
+with modifications focused on firmware development workflows (serial port
+picking, file dialogs, per-task remembered inputs, copy-command-line action,
+etc.).
+
 ## License
 
 MIT
