@@ -1,7 +1,7 @@
 {
   "name": "firmware-task-manager",
   "displayName": "Firmware Task Manager",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Run VSCode tasks with interactive parameter prompts (serial port, file path, free text) for firmware development workflows.",
   "categories": [
     "Other"
@@ -136,6 +136,12 @@
         "title": "Configure Inputs",
         "category": "Firmware Task Manager",
         "icon": "$(settings-gear)"
+      },
+      {
+        "command": "firmware-task.copyCommand",
+        "title": "Copy Command Line",
+        "category": "Firmware Task Manager",
+        "icon": "$(clippy)"
       }
     ],
     "views": {
@@ -208,6 +214,10 @@
         {
           "command": "firmware-task.configureInputs",
           "when": "false"
+        },
+        {
+          "command": "firmware-task.copyCommand",
+          "when": "false"
         }
       ],
       "view/title": [
@@ -251,6 +261,11 @@
           "command": "firmware-task.viewSource",
           "when": "view == firmware-task.tasks && (viewItem == task || viewItem == favoriteTask || viewItem == runningTask || viewItem == runningFavoriteTask || viewItem == taskWithInputs || viewItem == favoriteTaskWithInputs || viewItem == runningTaskWithInputs || viewItem == runningFavoriteTaskWithInputs)",
           "group": "inline@3"
+        },
+        {
+          "command": "firmware-task.copyCommand",
+          "when": "view == firmware-task.tasks && (viewItem == task || viewItem == favoriteTask || viewItem == runningTask || viewItem == runningFavoriteTask || viewItem == taskWithInputs || viewItem == favoriteTaskWithInputs || viewItem == runningTaskWithInputs || viewItem == runningFavoriteTaskWithInputs)",
+          "group": "inline@4"
         },
         {
           "command": "firmware-task.favorite",

@@ -227,6 +227,15 @@ async function resolveInput(
         ? { label: opt, value: opt }
         : { label: opt.label, value: opt.value },
     );
+    if (cachedValue !== undefined) {
+      const idx = items.findIndex((i) => i.value === cachedValue);
+      if (idx > 0) {
+        const [hit] = items.splice(idx, 1);
+        if (hit !== undefined) {
+          items.unshift(hit);
+        }
+      }
+    }
     const picked = await vscode.window.showQuickPick(items, {
       placeHolder: def.description,
       ignoreFocusOut: true,
@@ -238,6 +247,7 @@ async function resolveInput(
     const result = (await vscode.commands.executeCommand(
       def.command,
       def.args,
+      cachedValue,
     )) as unknown;
     return typeof result === "string" ? result : undefined;
   }
@@ -315,6 +325,57 @@ export async function executeTaskWithInputs(
   const newExec = rebuildExecution(task, values);
   const newTask = rebuildTask(task, newExec);
   return vscode.tasks.executeTask(newTask);
+}
+
+function formatExecution(
+  exec: TaskExecution | undefined,
+): string | undefined {
+  if (exec instanceof vscode.ShellExecution) {
+    if (exec.commandLine !== undefined) {
+      return exec.commandLine;
+    }
+    const command = exec.command;
+    const commandStr =
+      typeof command === "string" ? command : (command?.value ?? "");
+    const parts: string[] = [commandStr];
+    for (const a of exec.args ?? []) {
+      parts.push(typeof a === "string" ? a : a.value);
+    }
+    return parts.join(" ").trim();
+  }
+  if (exec instanceof vscode.ProcessExecution) {
+    return [exec.process, ...exec.args].join(" ").trim();
+  }
+  return undefined;
+}
+
+export async function copyTaskCommand(
+  task: vscode.Task,
+  taskPath: string,
+  cache: InputCache,
+): Promise<boolean> {
+  const values = await resolveAllInputs(task, taskPath, cache);
+  if (values === undefined) {
+    return false;
+  }
+
+  const exec =
+    Object.keys(values).length === 0
+      ? task.execution
+      : rebuildExecution(task, values);
+  const commandLine = formatExecution(exec ?? undefined);
+  if (!commandLine) {
+    void vscode.window.showWarningMessage(
+      `Task "${task.name}" has no shell/process command to copy.`,
+    );
+    return false;
+  }
+
+  await vscode.env.clipboard.writeText(commandLine);
+  const preview =
+    commandLine.length > 80 ? `${commandLine.slice(0, 77)}…` : commandLine;
+  void vscode.window.showInformationMessage(`Copied: ${preview}`);
+  return true;
 }
 
 export async function configureTaskInputs(

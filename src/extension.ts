@@ -6,6 +6,7 @@ import { registerFirmwareInputCommands } from "./firmware-inputs";
 import { InputCache } from "./input-cache";
 import {
   configureTaskInputs,
+  copyTaskCommand,
   executeTaskWithInputs,
 } from "./task-executor";
 import { openTaskSourceDocument } from "./task-source";
@@ -143,6 +144,22 @@ export function activate(context: vscode.ExtensionContext) {
       }
     },
   );
+  const copyCommandCommand = vscode.commands.registerCommand(
+    "firmware-task.copyCommand",
+    async (taskTreeItem: TaskTreeItem) => {
+      if (!taskTreeItem.task) {
+        return;
+      }
+      const copied = await copyTaskCommand(
+        taskTreeItem.task,
+        taskTreeItem.path,
+        inputCache,
+      );
+      if (copied) {
+        void taskTreeDataProvider.refresh();
+      }
+    },
+  );
 
   context.subscriptions.push(refreshTasksCommand);
   context.subscriptions.push(configureTaskCommand);
@@ -154,6 +171,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(favoriteTaskCommand);
   context.subscriptions.push(unfavoriteTaskCommand);
   context.subscriptions.push(configureInputsCommand);
+  context.subscriptions.push(copyCommandCommand);
 
   treeView = vscode.window.createTreeView("firmware-task.tasks", {
     treeDataProvider: taskTreeDataProvider,

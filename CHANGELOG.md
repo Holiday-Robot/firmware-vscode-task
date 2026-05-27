@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.1] - 2026-05-27
+
+### Added
+
+- New inline action **Copy Command Line** (📋) on each task. Resolves
+  `${input:...}` variables (cached or prompted just like ▶ Run) and copies the
+  fully substituted command line to the clipboard instead of executing it.
+
+### Changed
+
+- Configure (⚙️) and Run now pre-fill / preselect the previously used value
+  for every input type:
+  - `pickFile` / `pickFolder` open at the previously chosen path
+  - `pickSerialPort` and `pickFromList` move the previous choice to the top
+  - `promptInput` pre-fills the input box
+  - Native `pickString` also moves the previous choice to the top
+
 ## [1.1.0] - 2026-05-24
 
 ### Added
