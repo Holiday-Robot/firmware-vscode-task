@@ -1,0 +1,34 @@
+name: Publish to Marketplace
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build VSIX
+        run: pnpm run vsix
+
+      - name: Publish to VSCode Marketplace
+        run: pnpm dlx @vscode/vsce publish --no-dependencies --packagePath dist-vsix/*.vsix
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
