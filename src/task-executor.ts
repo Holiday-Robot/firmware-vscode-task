@@ -205,6 +205,81 @@ function jsonNodeToValue(node: {
   return undefined;
 }
 
+interface TaskTerminalFlags {
+  runInActiveTerminal: boolean;
+  terminalName?: string;
+}
+
+// tasks.json 의 해당 task(label 매칭)에서 커스텀 플래그를 직접 읽는다.
+// VSCode 는 빌트인 task 타입(shell/process)의 definition 에서 미정의 키를 떼어내므로
+// task.definition 대신 원본 파일을 jsonc-parser 로 파싱한다 (readTasksJsonInputs 와 동일 패턴).
+async function readTaskFlagsFromTasksJson(
+  task: vscode.Task,
+): Promise<TaskTerminalFlags> {
+  const flags: TaskTerminalFlags = { runInActiveTerminal: false };
+  const folder =
+    typeof task.scope === "object"
+      ? (task.scope as vscode.WorkspaceFolder)
+      : vscode.workspace.workspaceFolders?.[0];
+  if (!folder) {
+    return flags;
+  }
+
+  const uri = vscode.Uri.joinPath(folder.uri, ".vscode", "tasks.json");
+  let bytes: Uint8Array;
+  try {
+    bytes = await vscode.workspace.fs.readFile(uri);
+  } catch {
+    return flags;
+  }
+
+  const root = parseTree(new TextDecoder().decode(bytes));
+  if (!root) {
+    return flags;
+  }
+
+  const tasksNode = findNodeAtLocation(root, ["tasks"]);
+  if (!tasksNode || !tasksNode.children) {
+    return flags;
+  }
+
+  for (const itemNode of tasksNode.children) {
+    const obj = jsonNodeToValue(
+      itemNode as Parameters<typeof jsonNodeToValue>[0],
+    ) as Record<string, unknown> | undefined;
+    if (!obj || obj["label"] !== task.name) {
+      continue;
+    }
+    if (obj["runInActiveTerminal"] === true) {
+      flags.runInActiveTerminal = true;
+    }
+    if (typeof obj["terminalName"] === "string" && obj["terminalName"]) {
+      flags.terminalName = obj["terminalName"];
+    }
+    break;
+  }
+
+  return flags;
+}
+
+// 전송 대상 터미널 선택: 이름 지정 시 그 터미널(없으면 생성) → 활성 터미널 → 없으면 생성.
+// reload 후 터미널 객체 참조는 사라지므로 항상 이름으로 재탐색한다.
+function getTargetTerminal(
+  terminalName: string | undefined,
+  cwd: string | undefined,
+): vscode.Terminal {
+  if (terminalName) {
+    const existing = vscode.window.terminals.find(
+      (t) => t.name === terminalName,
+    );
+    return existing ?? vscode.window.createTerminal({ name: terminalName, cwd });
+  }
+  return (
+    vscode.window.activeTerminal ??
+    vscode.window.createTerminal({ name: "Firmware Task", cwd })
+  );
+}
+
 async function resolveInput(
   def: TaskInputDef,
   cachedValue: string | undefined,
@@ -307,12 +382,64 @@ async function resolveAllInputs(
   return values;
 }
 
+function taskCwd(task: vscode.Task): string | undefined {
+  const exec = task.execution;
+  const cwd =
+    exec instanceof vscode.ShellExecution ||
+    exec instanceof vscode.ProcessExecution
+      ? exec.options?.cwd
+      : undefined;
+  if (cwd) {
+    return cwd;
+  }
+  return typeof task.scope === "object"
+    ? (task.scope as vscode.WorkspaceFolder).uri.fsPath
+    : undefined;
+}
+
+// task 의 명령줄을 새 task 터미널 대신 (지정/활성/신규) 터미널에 입력·실행한다.
+// IDF export 등 환경이 이미 잡힌 인터랙티브 터미널을 재사용하기 위한 경로.
+async function runTaskInActiveTerminal(
+  task: vscode.Task,
+  taskPath: string,
+  cache: InputCache,
+  flags: TaskTerminalFlags,
+  options: { useCachedOnly?: boolean } = {},
+): Promise<void> {
+  const values = await resolveAllInputs(task, taskPath, cache, options);
+  if (values === undefined) {
+    return;
+  }
+
+  const exec =
+    Object.keys(values).length === 0
+      ? task.execution
+      : rebuildExecution(task, values);
+  const commandLine = formatExecution(exec ?? undefined);
+  if (!commandLine) {
+    void vscode.window.showWarningMessage(
+      `Task "${task.name}" has no shell/process command to send to a terminal.`,
+    );
+    return;
+  }
+
+  const terminal = getTargetTerminal(flags.terminalName, taskCwd(task));
+  terminal.show();
+  terminal.sendText(commandLine, true);
+}
+
 export async function executeTaskWithInputs(
   task: vscode.Task,
   taskPath: string,
   cache: InputCache,
   options: { useCachedOnly?: boolean } = {},
 ): Promise<vscode.TaskExecution | undefined> {
+  const flags = await readTaskFlagsFromTasksJson(task);
+  if (flags.runInActiveTerminal) {
+    await runTaskInActiveTerminal(task, taskPath, cache, flags, options);
+    return undefined;
+  }
+
   const values = await resolveAllInputs(task, taskPath, cache, options);
   if (values === undefined) {
     return undefined;

@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.2] - 2026-06-03
+
+### Added
+
+- Per-task **`runInActiveTerminal`** option in `tasks.json`. When set to `true`,
+  running the task types its command into an existing terminal (with a trailing
+  newline so it executes) instead of launching a new task terminal — useful for
+  reusing a terminal that already has its environment set up (e.g. an ESP-IDF
+  terminal where `export.sh` / `export.ps1` was sourced).
+- Optional **`terminalName`** companion key to pin sends to a specific named
+  terminal when several are open. Terminal selection priority: named terminal
+  (created if missing) → active terminal → a new terminal (default profile).
+- `${input:...}` substitution still applies on this path. Note: commands sent
+  this way are not tracked as VSCode task executions, so the tree's running
+  indicator / Terminate / Restart / running-count badge do not apply to them.
+
 ## [1.1.1] - 2026-05-27
 
 ### Added

@@ -73,6 +73,43 @@ Variables (`${input:port}`, etc.) are substituted by Firmware Task Manager when
 you launch the task from its tree view. Standard VSCode `promptString` and
 `pickString` input types are also supported.
 
+## Run in an existing terminal
+
+VSCode tasks always spawn a fresh task terminal, which does **not** inherit the
+environment of a terminal you already set up (e.g. an ESP-IDF terminal where
+`export.sh` / `export.ps1` was sourced). To reuse such a terminal, add
+`"runInActiveTerminal": true` to the task. When set, running the task **types
+the command into a terminal instead of launching a new task terminal**:
+
+```jsonc
+{
+  "label": "build",
+  "type": "shell",
+  "command": "idf.py build",
+  "runInActiveTerminal": true,   // type into a terminal instead of a new task terminal
+  "terminalName": "ESP-IDF"      // optional: always target this named terminal (created if missing)
+}
+```
+
+Terminal selection priority:
+
+1. `terminalName` given → the terminal with that exact name (created if none exists).
+   Use this to pin sends to one terminal when several are open.
+2. Otherwise → the **active** terminal.
+3. If no terminal is open → a new one is created with the default profile (so a
+   configured terminal profile, e.g. one that sources the IDF environment, still applies).
+
+The command is sent with a trailing newline, so it executes immediately.
+
+Notes / limitations:
+
+- `runInActiveTerminal` and `terminalName` are custom keys, so VSCode's editor may
+  flag them with a "not allowed" warning. This is cosmetic — the extension reads
+  them directly from `tasks.json` and they work regardless.
+- Commands sent this way are **not** tracked as VSCode task executions: the tree's
+  running indicator, Terminate, Restart, and the running-count badge do **not**
+  apply to them. `${input:...}` substitution is still applied.
+
 ## Configuration
 
 | Setting | Default | Description |
