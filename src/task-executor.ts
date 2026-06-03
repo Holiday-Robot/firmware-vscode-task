@@ -505,6 +505,86 @@ export async function copyTaskCommand(
   return true;
 }
 
+interface DefaultBuildTaskInfo {
+  label: string;
+  runInActiveTerminal: boolean;
+}
+
+// 모든 워크스페이스 폴더의 tasks.json 에서 group {kind:"build", isDefault:true} 인 task 를 찾는다.
+// (VSCode 의 "Run Build Task" 가 고르는 디폴트 빌드 task 와 동일 기준.)
+async function findDefaultBuildTasks(): Promise<DefaultBuildTaskInfo[]> {
+  const result: DefaultBuildTaskInfo[] = [];
+  for (const folder of vscode.workspace.workspaceFolders ?? []) {
+    const uri = vscode.Uri.joinPath(folder.uri, ".vscode", "tasks.json");
+    let bytes: Uint8Array;
+    try {
+      bytes = await vscode.workspace.fs.readFile(uri);
+    } catch {
+      continue;
+    }
+    const root = parseTree(new TextDecoder().decode(bytes));
+    if (!root) {
+      continue;
+    }
+    const tasksNode = findNodeAtLocation(root, ["tasks"]);
+    if (!tasksNode || !tasksNode.children) {
+      continue;
+    }
+    for (const itemNode of tasksNode.children) {
+      const obj = jsonNodeToValue(
+        itemNode as Parameters<typeof jsonNodeToValue>[0],
+      ) as Record<string, unknown> | undefined;
+      if (!obj || typeof obj["label"] !== "string") {
+        continue;
+      }
+      const group = obj["group"];
+      const isDefaultBuild =
+        typeof group === "object" &&
+        group !== null &&
+        (group as Record<string, unknown>)["kind"] === "build" &&
+        (group as Record<string, unknown>)["isDefault"] === true;
+      if (isDefaultBuild) {
+        result.push({
+          label: obj["label"],
+          runInActiveTerminal: obj["runInActiveTerminal"] === true,
+        });
+      }
+    }
+  }
+  return result;
+}
+
+// context-key 용: runInActiveTerminal 인 디폴트 빌드 task 가 하나라도 있는지.
+export async function hasDefaultBuildInActiveTerminal(): Promise<boolean> {
+  const infos = await findDefaultBuildTasks();
+  return infos.some((i) => i.runInActiveTerminal);
+}
+
+// 디폴트 빌드 task 를 확장 경로(executeTaskWithInputs)로 실행한다.
+// 네이티브 "Run Build Task" 단축키가 확장을 우회하는 문제를 피하기 위해, 단축키를 이 명령으로
+// 라우팅하면 runInActiveTerminal 플래그가 그대로 적용된다.
+export async function runDefaultBuildTask(cache: InputCache): Promise<void> {
+  const infos = await findDefaultBuildTasks();
+  const target = infos.find((i) => i.runInActiveTerminal) ?? infos[0];
+  if (!target) {
+    void vscode.window.showInformationMessage(
+      "No default build task (group.kind=build, isDefault=true) found in tasks.json.",
+    );
+    return;
+  }
+
+  const tasks = await vscode.tasks.fetchTasks();
+  const task = tasks.find((t) => t.name === target.label);
+  if (!task) {
+    void vscode.window.showWarningMessage(
+      `Default build task "${target.label}" not found.`,
+    );
+    return;
+  }
+
+  await executeTaskWithInputs(task, task.name, cache);
+}
+
 export async function configureTaskInputs(
   task: vscode.Task,
   taskPath: string,

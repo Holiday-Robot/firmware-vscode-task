@@ -8,6 +8,8 @@ import {
   configureTaskInputs,
   copyTaskCommand,
   executeTaskWithInputs,
+  hasDefaultBuildInActiveTerminal,
+  runDefaultBuildTask,
 } from "./task-executor";
 import { openTaskSourceDocument } from "./task-source";
 import { createTaskStateChangeHandler } from "./task-state";
@@ -61,6 +63,12 @@ export function activate(context: vscode.ExtensionContext) {
           inputCache,
         );
       }
+    },
+  );
+  const runBuildTaskCommand = vscode.commands.registerCommand(
+    "firmware-task.runBuildTask",
+    async () => {
+      await runDefaultBuildTask(inputCache);
     },
   );
   const viewTaskSourceCommand = vscode.commands.registerCommand(
@@ -165,6 +173,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(configureTaskCommand);
   context.subscriptions.push(terminateAllTasksCommand);
   context.subscriptions.push(runTaskCommand);
+  context.subscriptions.push(runBuildTaskCommand);
   context.subscriptions.push(viewTaskSourceCommand);
   context.subscriptions.push(terminateTaskCommand);
   context.subscriptions.push(restartTaskCommand);
@@ -193,6 +202,32 @@ export function activate(context: vscode.ExtensionContext) {
           useCachedOnly: true,
         });
       }
+    }),
+  );
+
+  // Cmd/Ctrl+Shift+B (Run Build Task) 단축키를 확장 명령으로 라우팅할지 결정하는 context-key.
+  // 워크스페이스에 runInActiveTerminal=true 인 디폴트 빌드 task 가 있을 때만 true 로 설정해,
+  // 그 경우에만 단축키가 firmware-task.runBuildTask 로 동작한다(다른 프로젝트는 네이티브 빌드 유지).
+  const updateBuildContext = async () => {
+    const enabled = await hasDefaultBuildInActiveTerminal();
+    await vscode.commands.executeCommand(
+      "setContext",
+      "firmwareTask.hasBuildInTerminal",
+      enabled,
+    );
+  };
+  void updateBuildContext();
+
+  const tasksJsonWatcher = vscode.workspace.createFileSystemWatcher(
+    "**/.vscode/tasks.json",
+  );
+  tasksJsonWatcher.onDidChange(() => void updateBuildContext());
+  tasksJsonWatcher.onDidCreate(() => void updateBuildContext());
+  tasksJsonWatcher.onDidDelete(() => void updateBuildContext());
+  context.subscriptions.push(tasksJsonWatcher);
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      void updateBuildContext();
     }),
   );
 }

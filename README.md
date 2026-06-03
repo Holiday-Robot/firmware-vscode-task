@@ -110,6 +110,35 @@ Notes / limitations:
   running indicator, Terminate, Restart, and the running-count badge do **not**
   apply to them. `${input:...}` substitution is still applied.
 
+### Build shortcut (`Ctrl/Cmd+Shift+B`)
+
+VSCode's **Run Build Task** shortcut runs the default build task through its
+*native* task system, which bypasses this extension — so `runInActiveTerminal`
+would be ignored. To fix that, mark your build task as the default build task and
+add `runInActiveTerminal`:
+
+```jsonc
+{
+  "label": "idf-build",
+  "type": "shell",
+  "command": "idf.py build",
+  "runInActiveTerminal": true,
+  "group": { "kind": "build", "isDefault": true }
+}
+```
+
+When a workspace contains a default build task (`group.kind = "build"`,
+`isDefault = true`) **with** `runInActiveTerminal: true`, the extension reroutes
+the build shortcut to itself so the command is sent to your terminal:
+
+- macOS: `Cmd+Shift+B` · Windows / Linux: `Ctrl+Shift+B` (matches the native bindings).
+- The override is scoped by the `firmwareTask.hasBuildInTerminal` context key — it
+  only takes effect in workspaces that actually have such a task. Other projects
+  keep the normal VSCode build behavior.
+- `${input:...}` is resolved exactly like a tree-view run. (Remembered input values
+  are cached per task; values entered via the tree are not shared with the shortcut
+  path, so the first shortcut run of an input-bearing task may prompt once.)
+
 ## Configuration
 
 | Setting | Default | Description |

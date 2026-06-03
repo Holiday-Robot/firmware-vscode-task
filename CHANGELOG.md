@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.3] - 2026-06-03
+
+### Added
+
+- **Build shortcut routing.** VSCode's native _Run Build Task_ shortcut bypasses
+  the extension, so `runInActiveTerminal` was ignored when building via the
+  keyboard. Now, when the workspace has a default build task
+  (`group.kind = "build"`, `isDefault = true`) with `runInActiveTerminal: true`,
+  the extension reroutes the shortcut to itself and sends the command to your
+  terminal. Bindings match the native ones — `Cmd+Shift+B` (macOS),
+  `Ctrl+Shift+B` (Windows / Linux).
+- New command `firmware-task.runBuildTask` (runs the default build task through
+  the extension, resolving `${input:...}` as usual).
+- The override is gated by the `firmwareTask.hasBuildInTerminal` context key, so
+  it only applies in workspaces that have such a task; other projects keep the
+  native build behavior.
+
 ## [1.1.2] - 2026-06-03
 
 ### Added

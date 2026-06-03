@@ -1,7 +1,7 @@
 {
   "name": "firmware-task-manager",
   "displayName": "Firmware Task Manager",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Run VSCode tasks with interactive parameter prompts (serial port, file path, free text) for firmware development workflows.",
   "categories": [
     "Other"
@@ -81,6 +81,12 @@
       {
         "command": "firmware-task.run",
         "title": "Run Task",
+        "category": "Firmware Task Manager",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "firmware-task.runBuildTask",
+        "title": "Run Default Build Task",
         "category": "Firmware Task Manager",
         "icon": "$(debug-start)"
       },
@@ -177,6 +183,10 @@
         },
         {
           "command": "firmware-task.run",
+          "when": "false"
+        },
+        {
+          "command": "firmware-task.runBuildTask",
           "when": "false"
         },
         {
@@ -287,6 +297,14 @@
         }
       ]
     },
+    "keybindings": [
+      {
+        "command": "firmware-task.runBuildTask",
+        "key": "ctrl+shift+b",
+        "mac": "cmd+shift+b",
+        "when": "firmwareTask.hasBuildInTerminal"
+      }
+    ],
     "configuration": [
       {
         "title": "Firmware Task Manager",
