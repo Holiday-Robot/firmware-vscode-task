@@ -3,6 +3,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 import { compareStrings } from "./helpers";
+import { findActiveExecution } from "./running-tasks";
 import { TaskScope } from "./task-scope";
 import { taskSourceMappings } from "./task-source";
 import { TaskTreeItemType } from "./task-tree-item-type";
@@ -60,9 +61,7 @@ export class TaskTreeItem extends vscode.TreeItem {
       }
     } else {
       this.task = data;
-      this.execution = vscode.tasks.taskExecutions.find(
-        (e) => e.task.name === data.name && e.task.source === data.source,
-      );
+      this.execution = findActiveExecution(data);
       this.contextValue = TaskTreeItem.getTaskContextValue(
         this.execution,
         options?.isFavorite ?? false,

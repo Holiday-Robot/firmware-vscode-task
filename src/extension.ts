@@ -11,6 +11,12 @@ import {
   hasDefaultBuildInActiveTerminal,
   runDefaultBuildTask,
 } from "./task-executor";
+import {
+  dismissExecution,
+  getActiveExecutions,
+  onDidChangeRunningTasks,
+  registerRunningTaskTracking,
+} from "./running-tasks";
 import { openTaskSourceDocument } from "./task-source";
 import { createTaskStateChangeHandler } from "./task-state";
 import { TaskTreeDataProvider } from "./task-tree-data-provider";
@@ -25,6 +31,7 @@ export function activate(context: vscode.ExtensionContext) {
   const inputCache = new InputCache(context);
   const taskTreeDataProvider = new TaskTreeDataProvider(inputCache);
   registerFirmwareInputCommands(context);
+  registerRunningTaskTracking(context);
   const updateTreeView = () => {
     void taskTreeDataProvider.refresh();
     updateViewBadge();
@@ -50,7 +57,10 @@ export function activate(context: vscode.ExtensionContext) {
   const terminateAllTasksCommand = vscode.commands.registerCommand(
     "firmware-task.terminateAll",
     () => {
-      vscode.tasks.taskExecutions.slice().forEach((e) => e.terminate());
+      getActiveExecutions().forEach((e) => {
+        e.terminate();
+        dismissExecution(e);
+      });
     },
   );
   const runTaskCommand = vscode.commands.registerCommand(
@@ -112,7 +122,9 @@ export function activate(context: vscode.ExtensionContext) {
     "firmware-task.terminate",
     (taskTreeItem: TaskTreeItem) => {
       if (taskTreeItem.execution) {
+        // terminate() 가 좀비라 no-op 이어도 UI 는 즉시 정리되도록 낙관적으로 제외한다.
         taskTreeItem.execution.terminate();
+        dismissExecution(taskTreeItem.execution);
       }
     },
   );
@@ -191,6 +203,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.tasks.onDidStartTask(updateTreeViewAfterTaskStateChanges),
   );
+  context.subscriptions.push(onDidChangeRunningTasks(updateTreeView));
   context.subscriptions.push(
     vscode.tasks.onDidEndTask((event) => {
       updateTreeViewAfterTaskStateChanges();
@@ -236,7 +249,7 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {}
 
 function updateViewBadge() {
-  const count = vscode.tasks.taskExecutions.length;
+  const count = getActiveExecutions().length;
   treeView.badge = {
     value: count,
     tooltip: `${count === 0 ? "No" : count.toString()} running ${count > 1 ? "tasks" : "task"}`,

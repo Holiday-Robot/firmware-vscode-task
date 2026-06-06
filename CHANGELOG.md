@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.4] - 2026-06-06
+
+### Fixed
+
+- **Stale "running" state after deleting a task terminal.** Running state was
+  derived solely from `vscode.tasks.taskExecutions`, but force-closing a task's
+  terminal (trash icon) can leave a "zombie" execution that VSCode never removes
+  (`onDidEndTask` never fires). The tree/badge kept showing the task as running,
+  and pressing stop was a no-op. The extension now reconciles on terminal close —
+  matching each execution's process ID against the open terminals — and dismisses
+  executions whose terminal is gone, so the tree and badge clear automatically.
+  Stop/Stop-All also dismiss optimistically so the UI clears immediately.
+
 ## [1.1.3] - 2026-06-03
 
 ### Added
